@@ -10,7 +10,6 @@ This script is used to check if the pong bot has emmited a pong event for all th
 - install dependencies: `pip3 install -r requirements.txt`
 
 ## Run
-Set up the bot address of the `candidate_bot` and the `candidate_starting_block` in the `main.py` file.
-Run the main.py with `python3 main.py`
+Run the main.py with `python3 main.py <candidate_bot_address> <candidate_starting_block>`
 
 All the logs are stored in the logs folder with the name of the candidate_bot address. Also are streamed to the console.
