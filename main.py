@@ -23,7 +23,7 @@ def setup_logger(log_file="logs.log", level=logging.INFO):
     return logger
 
 
-def getEvents(ping_pong_contract, starting_block, candidate_bot):
+def getEvents(ping_pong_contract, candidate_starting_block, candidate_bot):
     all_pings = ping_pong_contract.get_all_pings(candidate_starting_block)
     # logger.info(f"Ping example: {all_pings[0]}")
     all_pongs = ping_pong_contract.get_all_pongs(
