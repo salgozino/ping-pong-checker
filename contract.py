@@ -67,6 +67,6 @@ class Contract:
         for pong_event in pongs_events:
             tx_hash = pong_event.transactionHash.hex()
             tx = self.web3.eth.get_transaction(tx_hash)
-            if tx["from"] == address:
+            if tx["from"].lower() == address.lower():
                 pongs.append(pong_event)
         return pongs
