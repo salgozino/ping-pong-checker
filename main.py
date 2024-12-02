@@ -45,7 +45,7 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
     )
 
     # Let's check the ping arg in pong events agains the ping txs.
-    pings_hash_in_pongs = set([pong["args"]["txHash"] for pong in all_pongs])
+    pings_hash_in_pongs = [pong["args"]["txHash"] for pong in all_pongs]
     ping_txs = [ping["transactionHash"] for ping in all_pings]
 
     # Same amount of pongs than pings?
@@ -61,7 +61,8 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
         logger.info("There are not duplicated pingHash in pongs")
 
     # Check if all the pong tx args match with the ping txs.
-    for pong_hash in pings_hash_in_pongs:
+    pings_hash_in_pongs = set(pings_hash_in_pongs)  # If there are duplicate pongs, remove them :)
+    for pong_hash in set(pings_hash_in_pongs):
         if not pong_hash in ping_txs:
             logger.error(f"Pong {pong_hash} not included in the pings txs")
     logger.info("All pongs events has a valid ping tx")
