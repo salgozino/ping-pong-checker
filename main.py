@@ -56,16 +56,22 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
 
     # Duplicated pongs check.
     if len(set(pings_hash_in_pongs)) != len(pings_hash_in_pongs):
-        logger.error("There are duplicated pingHash in pongs")
+        logger.error(
+            (f"There are duplicated pingHash in pongs. There are {len(pings_hash_in_pongs)} pong events,"
+             f" but the unique array of ping txs in the pong events are {len(set(pings_hash_in_pongs))}")
+        )
     else:
         logger.info("There are not duplicated pingHash in pongs")
 
     # Check if all the pong tx args match with the ping txs.
     pings_hash_in_pongs = set(pings_hash_in_pongs)  # If there are duplicate pongs, remove them :)
-    for pong_hash in set(pings_hash_in_pongs):
-        if not pong_hash in ping_txs:
-            logger.error(f"Pong {pong_hash} not included in the pings txs")
-    logger.info("All pongs events has a valid ping tx")
+    count_of_invalid_pongs = 0
+    for ping_hash in set(pings_hash_in_pongs):
+        if not ping_hash in ping_txs:
+            logger.error(f"Pong for {ping_hash} not included in the pings txs")
+            count_of_invalid_pongs += 1
+    if count_of_invalid_pongs == 0:
+        logger.info("All pongs events has a valid ping tx")
 
     # Missing pings
     if len(pings_hash_in_pongs) < len(ping_txs):
