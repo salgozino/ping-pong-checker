@@ -3,6 +3,7 @@ import json
 
 from dotenv import load_dotenv
 from web3 import Web3
+from web3.types import TxData
 
 
 load_dotenv()
@@ -37,22 +38,24 @@ class Contract:
             address=self.address, abi=abi, decode_tuples=True
         )
         # TODO: raise error if contract was not possible to instantiate
-        self.logger.info(f"Contract wit address {self.contract.address} attached")
+        self.logger.info(
+            f"Contract wit address {self.contract.address} attached")
         return self.contract
 
     def get_transaction(self, tx_hash: str):
-        return self.web3.eth.get_transaction(tx_hash)
+        return self.web3.eth.get_transaction(tx_hash)  # type: ignore
 
     def get_blocknumber_from_tx_hash(self, tx_hash: str):
-        tx = self.get_transaction(tx_hash)
+        tx: TxData = self.get_transaction(tx_hash)
         if tx is not None:
-            return tx["blockNumber"]
+            return tx.get("blockNumber")
         return None
 
     def get_all_pings(self, start_block):
         """Obtiene todos los eventos Ping de un contrato desde un bloque determinado"""
         self.logger.info(f"Get all pings since block {start_block}")
-        filter_ping = self.contract.events.Ping.create_filter(fromBlock=start_block)
+        filter_ping = self.contract.events.Ping.create_filter(
+            fromBlock=start_block)
         return filter_ping.get_all_entries()
 
     def get_all_pongs(self, start_block, address):
@@ -60,13 +63,15 @@ class Contract:
         Obtiene todos los eventos Pong de un contrato desde un bloque determinado.
         Solo se obtienen los eventos generados por la address indicada
         """
-        self.logger.info(f"Get all pongs from {address} since block {start_block}")
-        pongs_filter = self.contract.events.Pong.create_filter(fromBlock=start_block)
+        self.logger.info(
+            f"Get all pongs from {address} since block {start_block}")
+        pongs_filter = self.contract.events.Pong.create_filter(
+            fromBlock=start_block)
         pongs_events = pongs_filter.get_all_entries()
         pongs = []
         for pong_event in pongs_events:
             tx_hash = pong_event.transactionHash.hex()
             tx = self.web3.eth.get_transaction(tx_hash)
-            if tx["from"].lower() == address.lower():
+            if tx.get("from", "").lower() == address.lower():
                 pongs.append(pong_event)
         return pongs

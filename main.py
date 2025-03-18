@@ -38,7 +38,8 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
     logger.info(
         f"Starting to review pongs for candidate: {candidate_bot} since block: {candidate_starting_block}"
     )
-    ping_pong_contract = Contract(PING_PONG_ADDRESS, "PingPongABI.json", logger)
+    ping_pong_contract = Contract(
+        PING_PONG_ADDRESS, "PingPongABI.json", logger)
 
     all_pings, all_pongs = getEvents(
         ping_pong_contract, candidate_starting_block, candidate_bot
@@ -57,18 +58,23 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
     # Duplicated pongs check.
     if len(set(pings_hash_in_pongs)) != len(pings_hash_in_pongs):
         logger.error(
-            (f"There are duplicated pingHash in pongs. There are {len(pings_hash_in_pongs)} pong events,"
-             f" but the unique array of ping txs in the pong events are {len(set(pings_hash_in_pongs))}")
+            (
+                f"There are duplicated pingHash in pongs. There are {len(pings_hash_in_pongs)} pong events,"
+                f" but the unique array of ping txs in the pong events are {len(set(pings_hash_in_pongs))}"
+            )
         )
     else:
         logger.info("There are not duplicated pingHash in pongs")
 
     # Check if all the pong tx args match with the ping txs.
-    pings_hash_in_pongs = set(pings_hash_in_pongs)  # If there are duplicate pongs, remove them :)
+    pings_hash_in_pongs = set(
+        pings_hash_in_pongs
+    )  # If there are duplicate pongs, remove them :)
     count_of_invalid_pongs = 0
     for ping_hash in set(pings_hash_in_pongs):
         if not ping_hash in ping_txs:
-            logger.error(f"Pong for {ping_hash} not included in the pings txs")
+            logger.error(
+                f"Pong for 0x{ping_hash.hex()} not included in the pings txs")
             count_of_invalid_pongs += 1
     if count_of_invalid_pongs == 0:
         logger.info("All pongs events has a valid ping tx")
@@ -78,7 +84,8 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
         logger.error(
             f"There are {(1 - len(pings_hash_in_pongs) / len(ping_txs)) * 100:.2f}% missing ping txs"
         )
-        missing_pings = [ping for ping in ping_txs if ping not in pings_hash_in_pongs]
+        missing_pings = [
+            ping for ping in ping_txs if ping not in pings_hash_in_pongs]
         logger.error(f"Missing pings: {missing_pings}")
 
 
