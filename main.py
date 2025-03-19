@@ -1,3 +1,9 @@
+"""
+Main module to check the performance of the Pong Bot from different candidates
+
+With this module you can pass the bot address and the starting block to check if
+the bot has pong all the pings, if there are missing pongs or duplicated pongs.
+"""
 import sys
 import logging
 
@@ -6,35 +12,74 @@ from contract import Contract
 PING_PONG_ADDRESS = "0xA7F42ff7433cB268dD7D59be62b00c30dEd28d3D"
 
 
-def setup_logger(log_file="logs.log", level=logging.INFO):
+def setupLogger(log_file="logs.log", level=logging.INFO) -> logging.Logger:
+    """
+    Sets up a logger with both file and stream handlers.
+
+    Args:
+        log_file (str): The name of the log file to write to. Defaults to "logs.log".
+        level (int): The logging level. Defaults to logging.INFO.
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
     # Configure log file
     name = "pong-checker"
-    logger = logging.getLogger(name)
+    _logger: logging.Logger = logging.getLogger(name)
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    logger.setLevel(level)
-    fileHandler = logging.FileHandler(f"logs/{log_file}", mode="a")
-    fileHandler.setFormatter(formatter)
-    logger.addHandler(fileHandler)
-    streamHandler = logging.StreamHandler()
-    streamHandler.setFormatter(formatter)
-    logger.addHandler(streamHandler)
-    return logger
+    _logger.setLevel(level)
+    file_handler = logging.FileHandler(f"logs/{log_file}", mode="a")
+    file_handler.setFormatter(formatter)
+    _logger.addHandler(file_handler)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    _logger.addHandler(stream_handler)
+    return _logger
 
 
-def getEvents(ping_pong_contract, candidate_starting_block, candidate_bot):
-    all_pings = ping_pong_contract.get_all_pings(candidate_starting_block)
+def getEvents(ping_pong_contract: Contract, start_block: int, address: str):
+    """
+    Retrieves all ping and pong events from a given ping-pong contract starting from a specific block.
+
+    Args:
+        ping_pong_contract (Contract): The contract instance to query for events.
+        start_block (int): The block number from which to start retrieving events.
+        address (str): The bot identifier to filter pong events.
+
+    Returns:
+        tuple: A tuple containing two lists:
+            - all_pings: A list of all ping events starting from the start_block.
+            - all_pongs: A list of all pong events starting from the start_block
+                and filtered by bot address.
+    """
+    all_pings = ping_pong_contract.get_all_pings(start_block)
     # logger.info(f"Ping example: {all_pings[0]}")
     all_pongs = ping_pong_contract.get_all_pongs(
-        candidate_starting_block, candidate_bot
+        start_block, address
     )
-    # logger.info(f"Pong example: {all_pongs[0]}")
-    logger.info(f"Pings: {len(all_pings)} | Pongs: {len(all_pongs)}")
     return all_pings, all_pongs
 
 
-def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logger):
+def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logger) -> None:
+    """
+    Main function to review pongs for a given candidate bot starting from a specific block.
+
+    Args:
+        candidate_bot (str): The candidate bot's identifier.
+        candidate_starting_block (int): The block number from which to start reviewing pongs.
+        log (logging.Logger): Logger instance for logging information and errors.
+
+    Logs:
+        - Information about the start of the review process.
+        - Number of pings and pongs found.
+        - Errors if there are mismatches in the number of pings and pongs.
+        - Errors if there are duplicate pongs.
+        - Errors if there are pongs without corresponding pings.
+        - Errors if there are missing pings.
+        - Information if all pongs have valid corresponding pings and if there are no duplicate pongs.
+    """
     logger.info(
         f"Starting to review pongs for candidate: {candidate_bot} since block: {candidate_starting_block}"
     )
@@ -44,6 +89,7 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
     all_pings, all_pongs = getEvents(
         ping_pong_contract, candidate_starting_block, candidate_bot
     )
+    logger.info(f"Pings: {len(all_pings)} | Pongs: {len(all_pongs)}")
 
     # Let's check the ping arg in pong events agains the ping txs.
     pings_hash_in_pongs = [pong["args"]["txHash"] for pong in all_pongs]
@@ -94,7 +140,10 @@ if __name__ == "__main__":
         print("Usage: python3 main.py <candidate_bot> <candidate_starting_block>")
         sys.exit(1)
 
-    candidate_bot = sys.argv[1]
-    candidate_starting_block = int(sys.argv[2])
-    logger = setup_logger(candidate_bot)
-    main(candidate_bot, candidate_starting_block, logger)
+    candidate_bot_address: str = sys.argv[1]
+    starting_block = int(sys.argv[2])
+    _logger: logging.Logger = setupLogger(log_file=candidate_bot_address)
+    main(candidate_bot=candidate_bot_address,
+         candidate_starting_block=starting_block,
+         logger=_logger
+         )
