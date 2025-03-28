@@ -6,13 +6,16 @@ the bot has pong all the pings, if there are missing pongs or duplicated pongs.
 """
 import sys
 import logging
+from typing import List
 
-from contract import Contract
+from web3.types import EventData
+
+from contract import PingPongContract
 
 PING_PONG_ADDRESS = "0xA7F42ff7433cB268dD7D59be62b00c30dEd28d3D"
 
 
-def setupLogger(log_file="logs.log", level=logging.INFO) -> logging.Logger:
+def setup_logger(log_file="logs.log", level=logging.INFO) -> logging.Logger:
     """
     Sets up a logger with both file and stream handlers.
 
@@ -39,7 +42,7 @@ def setupLogger(log_file="logs.log", level=logging.INFO) -> logging.Logger:
     return _logger
 
 
-def getEvents(ping_pong_contract: Contract, start_block: int, address: str):
+def get_events(ping_pong_contract: PingPongContract, start_block: int, address: str) -> tuple[List[EventData], List[EventData]]:
     """
     Retrieves all ping and pong events from a given ping-pong contract starting from a specific block.
 
@@ -54,10 +57,11 @@ def getEvents(ping_pong_contract: Contract, start_block: int, address: str):
             - all_pongs: A list of all pong events starting from the start_block
                 and filtered by bot address.
     """
-    all_pings = ping_pong_contract.get_all_pings(start_block)
+    all_pings: List[EventData] = ping_pong_contract.get_all_pings(
+        start_block=start_block)
     # logger.info(f"Ping example: {all_pings[0]}")
-    all_pongs = ping_pong_contract.get_all_pongs(
-        start_block, address
+    all_pongs: List[EventData] = ping_pong_contract.get_all_pongs(
+        start_block=start_block, address=address
     )
     return all_pings, all_pongs
 
@@ -83,10 +87,10 @@ def main(candidate_bot: str, candidate_starting_block: int, logger: logging.Logg
     logger.info(
         f"Starting to review pongs for candidate: {candidate_bot} since block: {candidate_starting_block}"
     )
-    ping_pong_contract = Contract(
-        PING_PONG_ADDRESS, "PingPongABI.json", logger)
+    ping_pong_contract = PingPongContract(
+        address=PING_PONG_ADDRESS, abi_path="PingPongABI.json", logger=logger)
 
-    all_pings, all_pongs = getEvents(
+    all_pings, all_pongs = get_events(
         ping_pong_contract, candidate_starting_block, candidate_bot
     )
     logger.info(f"Pings: {len(all_pings)} | Pongs: {len(all_pongs)}")
@@ -142,7 +146,7 @@ if __name__ == "__main__":
 
     candidate_bot_address: str = sys.argv[1]
     starting_block = int(sys.argv[2])
-    _logger: logging.Logger = setupLogger(log_file=candidate_bot_address)
+    _logger: logging.Logger = setup_logger(log_file=candidate_bot_address)
     main(candidate_bot=candidate_bot_address,
          candidate_starting_block=starting_block,
          logger=_logger

@@ -8,7 +8,7 @@ import json
 from typing import List
 
 from dotenv import load_dotenv
-from eth_typing import Address, BlockNumber
+from eth_typing import BlockNumber, ChecksumAddress
 from web3 import Web3
 from web3.contract.contract import Contract
 from web3.types import TxData, EventData, ABI
@@ -17,7 +17,7 @@ from web3.types import TxData, EventData, ABI
 load_dotenv()
 
 
-class Contract:
+class PingPongContract:
     """
     A class to interact with a smart contract on the Ethereum blockchain using Web3.py.
 
@@ -51,13 +51,12 @@ class Contract:
             Retrieves and returns all 'Pong' events from the contract since the specified start block,
             filtered by the given address.
     """
-    # TODO: choose the proper RPC from the chainID
     rpc: str | None = os.getenv("RPC_HTTP_PROVIDER", None)
     if rpc is None:
         raise ValueError("RPC_HTTP_PROVIDER not set")
     web3 = Web3(Web3.HTTPProvider(rpc))
 
-    def __init__(self, address: Address, abi_path: str, logger: logging.Logger) -> None:
+    def __init__(self, address: str, abi_path: str, logger: logging.Logger) -> None:
         """
         Initialize a new Contract instance.
 
@@ -69,7 +68,7 @@ class Contract:
         self.logger: logging.Logger = logger
         # Just in case to prevent error.
         self.address: ChecksumAddress = Web3.to_checksum_address(
-            address.lower())
+            value=address.lower())
         self.abi_path = abi_path
         self.get_contract_from_abi()
 
@@ -85,9 +84,9 @@ class Contract:
             json.JSONDecodeError: If the ABI file is not a valid JSON.
             KeyError: If the ABI key is not found in the JSON data.
         """
-        with open(self.abi_path, "r") as abi_file:
+        with open(file=self.abi_path, mode="r", encoding="utf-8") as abi_file:
             abi_data = json.load(abi_file)
-            contract_abi = abi_data["abi"]
+            contract_abi: ABI = abi_data["abi"]
         return contract_abi
 
     def get_contract_from_abi(self) -> Contract:
@@ -121,7 +120,7 @@ class Contract:
         Returns:
             dict: Transaction details from the blockchain.
         """
-        return self.web3.eth.get_transaction(tx_hash)
+        return self.web3.eth.get_transaction(transaction_hash=tx_hash)  # type: ignore[no-untyped-call]
 
     def get_blocknumber_from_tx_hash(self, tx_hash: str) -> BlockNumber | None:
         """
@@ -133,12 +132,12 @@ class Contract:
         Returns:
             int: The block number containing the transaction, or None if not found.
         """
-        tx: TxData = self.get_transaction(tx_hash)
+        tx: TxData = self.get_transaction(tx_hash=tx_hash)
         if tx is not None:
             return tx.get("blockNumber")
         return None
 
-    def get_all_pings(self, start_block) -> List[EventData]:
+    def get_all_pings(self, start_block: int) -> List[EventData]:
         """
         Retrieve all Ping events from the contract since a specified block.
 
@@ -153,7 +152,7 @@ class Contract:
             fromBlock=start_block)
         return filter_ping.get_all_entries()
 
-    def get_all_pongs(self, start_block, address) -> List[EventData]:
+    def get_all_pongs(self, start_block: int, address: str) -> List[EventData]:
         """
         Retrieve all Pong events from the contract for a specific address since a specified block.
 
@@ -171,8 +170,9 @@ class Contract:
         pongs_events: List[EventData] = pongs_filter.get_all_entries()
         pongs: List[EventData] = []
         for pong_event in pongs_events:
-            tx_hash = pong_event.transactionHash.hex()
-            tx = self.web3.eth.get_transaction(tx_hash)
+            tx_hash = pong_event["transactionHash"].hex()
+            tx = self.web3.eth.get_transaction(
+                tx_hash)  # type: ignore[no-untyped-call]
             if tx.get("from", "").lower() == address.lower():
                 pongs.append(pong_event)
         return pongs
